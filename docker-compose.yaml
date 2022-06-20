@@ -1,0 +1,34 @@
+version: "2"
+
+services:
+  go:
+    image: golang
+    container_name: btgo
+    build: ./Go
+    volumes:
+    - go:/usr/src/app
+    ports:
+    - "8443:8443"
+  db:
+    image: postgres
+    container_name: btdb
+    restart: always
+    env_file: .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - db:/var/lib/postgresql/data
+volumes:
+  go:
+    driver: local
+    driver_opts:
+      device: /home/volumes/go
+      o: bind
+      type: none
+  db:
+    driver: local
+    driver_opts:
+      device: /home/volumes/db
+      o: bind
+      type: none
