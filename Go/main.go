@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"testbot/cmp"
 	"testbot/src"
 
@@ -26,7 +27,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	bot, err := tgbotapi.NewBotAPI("5115669897:AAH9j-hyC_EUAI7nLwDcTjOuY2vDq4uncLY")
+	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		log.Fatal(err)
 	}
