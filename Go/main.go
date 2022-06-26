@@ -18,7 +18,7 @@ var Chats map[int64]*cmp.Chat = make(map[int64]*cmp.Chat)
 
 func main() {
 
-	DBconnStr := "host=" + "nbshtech.ru" + " user=" + "wb_order" + " dbname=" + "postgres" + " password=" + "mypass" + " sslmode=disable"
+	DBconnStr := "host=" + "nbshtech.ru" + " user=" + os.Getenv("POSTGRES_USER") + " dbname=" + os.Getenv("POSTGRES_USER") + " password=" + os.Getenv("POSTGRES_PASSWORD") + " sslmode=disable"
 
 	Bot := cmp.Bot{}
 	var err error
@@ -58,30 +58,34 @@ func main() {
 
 	Bot.BotApi = bot
 	Bot.Msg = &tgbotapi.MessageConfig{}
-
+	Bot.TinderStart = make(chan struct{})
 	for update := range updates {
 		log.Println("got update")
 		//if update.CallbackQuery != nil {
 		//	Bot.BotApi.Send(tgbotapi.NewCallback(update.CallbackQuery.ID, "Отлично!"))
 		//}
-		if update.Message != nil {
-			go Bot.LogMsg(*update.Message)
-			if v, ok := Chats[update.Message.Chat.ID]; ok {
+		if update.Message != nil || update.CallbackQuery != nil {
+			go func() {
+				if update.Message != nil {
+					Bot.LogMsg(*update.Message)
+				}
+			}()
+			if v, ok := Chats[update.FromChat().ChatConfig().ChatID]; ok {
 				v.Updates <- update
 			} else {
 				fmt.Println("starting new chat")
 				v := &cmp.Chat{
 					Updates: make(chan tgbotapi.Update),
-					Id:      update.Message.Chat.ID}
+					Id:      update.FromChat().ChatConfig().ChatID}
 				Chats[v.Id] = v
 				go Bot.Db.Exec(`INSERT INTO public.chats
 					(id, first_name, last_name, username)
 					VALUES
 					($1, $2, $3, $4)`,
-					update.Message.From.ID,
-					update.Message.From.FirstName,
-					update.Message.From.LastName,
-					update.Message.From.UserName,
+					update.FromChat().ChatConfig().ChatID,
+					update.FromChat().FirstName,
+					update.FromChat().LastName,
+					update.FromChat().UserName,
 				)
 				go src.StartChatWithUser(&Bot, v)
 				v.Updates <- update

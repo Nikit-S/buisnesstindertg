@@ -13,7 +13,7 @@ import (
 var btCommands = tgbotapi.NewSetMyCommandsWithScope(
 	tgbotapi.BotCommandScope{Type: "chat", ChatID: -1},
 	tgbotapi.BotCommand{Command: "/msg_to_pairs", Description: "Отправить текст парам"},
-	tgbotapi.BotCommand{Command: "/next_pair", Description: "Выслать ссылку на новую пару"},
+	//tgbotapi.BotCommand{Command: "/next_pair", Description: "Выслать ссылку на новую пару"},
 	tgbotapi.BotCommand{Command: "/stop_bt", Description: "Закончить бизнес-тиндер"},
 )
 
@@ -28,10 +28,10 @@ func ExecBtCommand(b *cmp.Bot, ch *cmp.Chat, upd tgbotapi.Update) error {
 		upd := <-ch.Updates
 		msg_txt := upd.Message
 		b.Notify("Select id from public.pairs", msg_txt)
-	case "next_pair":
-		NextPair()
-		b.BotApi.Send(tgbotapi.NewMessage(ch.Id, fmt.Sprintf("First Pairs are ready: %v\n", pairsList)))
-		b.SendPairs(pairsList)
+	//case "next_pair":
+	//	NextPair()
+	//	b.BotApi.Send(tgbotapi.NewMessage(ch.Id, fmt.Sprintf("First Pairs are ready: %v\n", pairsList)))
+	//	b.SendPairs(pairsList)
 	case "stop_bt":
 		pairsList = []cmp.Pair{}
 		go Root(b, ch)
@@ -87,12 +87,13 @@ func BtConsole(b *cmp.Bot, ch *cmp.Chat) {
 
 	btCommands.Scope.ChatID = ch.Id
 	b.BotApi.Request(btCommands)
-	if StartPairs(b, ch) != nil {
-		go Root(b, ch)
-		return
-	}
-	b.BotApi.Send(tgbotapi.NewMessage(ch.Id, fmt.Sprintf("First Pairs are ready: %v\n", pairsList)))
-	b.SendPairs(pairsList)
+	//if StartPairs(b, ch) != nil {
+	//	go Root(b, ch)
+	//	return
+	//}
+	//b.BotApi.Send(tgbotapi.NewMessage(ch.Id, fmt.Sprintf("First Pairs are ready: %v\n", pairsList)))
+	//b.SendPairs(pairsList)
+
 	for update := range ch.Updates {
 		if update.Message.IsCommand() {
 			if ExecBtCommand(b, ch, update) == nil {

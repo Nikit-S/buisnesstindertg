@@ -11,7 +11,7 @@ type SharedConf struct {
 
 type Component interface {
 	Execute(b *Bot)
-	AddToScreen(s *Screen)
+	//AddToScreen(s *Screen)
 }
 
 type Screen struct {

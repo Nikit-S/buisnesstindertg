@@ -9,9 +9,10 @@ type TextWithButtons struct {
 	SharedConf
 }
 
-func (t *TextWithButtons) Execute(b *Bot) {
+func (t TextWithButtons) Execute(b *Bot) {
 	b.Msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(t.HideKeyboard)
 	b.Msg.Text = t.Msg
 	b.Msg.ReplyMarkup = t.Buttons
-	b.BotApi.Send(b.Msg)
+	msg, _ := b.BotApi.Send(b.Msg)
+	b.LogMsg(msg)
 }

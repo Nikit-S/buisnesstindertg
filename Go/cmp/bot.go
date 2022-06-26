@@ -15,10 +15,11 @@ import (
 )
 
 type Bot struct {
-	BotApi *tgbotapi.BotAPI
-	Msg    *tgbotapi.MessageConfig
-	Upd    *tgbotapi.Update
-	Db     *sql.DB
+	BotApi      *tgbotapi.BotAPI
+	Msg         *tgbotapi.MessageConfig
+	Upd         *tgbotapi.Update
+	Db          *sql.DB
+	TinderStart chan struct{}
 }
 
 func (s *Bot) Execute(c Component) {
@@ -225,5 +226,52 @@ func (b *Bot) LogMsg(msg tgbotapi.Message) {
 		msg.From.ID,
 		time.Unix(int64(msg.Date), 0),
 		msg.Text,
+	)
+}
+
+type User struct {
+	Id          int
+	FirstName   string
+	LastName    string
+	Username    string
+	Phone       string
+	Description string
+}
+
+func (b *Bot) GetParticipants(chat *Chat, old bool) []User {
+	user := User{}
+	users := make([]User, 1)
+	row, err := b.Db.Query(`SELECT id, first_name, last_name, username, phone, description FROM public.chats 
+	WHERE chats.id != $1 AND chats.part = true
+	AND chats.id NOT IN 
+		(SELECT pair_id FROM public.user_pair_history
+			WHERE id = $1 AND want = $2)
+		`, chat.Id, old)
+	if err != nil {
+		log.Println("sql error in GetParticipants")
+		return nil
+	}
+	for row.Next() {
+		if err = row.Scan(&user.Id, &user.FirstName, &user.LastName,
+			&user.Username, &user.Phone, &user.Description); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		fmt.Println(user)
+		users = append(users, user)
+	}
+
+	fmt.Println("total users got from sql:", users)
+	return users
+}
+
+func (b *Bot) RegisterPair(ch *Chat, user User, sign bool) {
+	b.Db.Exec(`INSERT INTO public.user_pair_history
+			(id, pair_id, want)
+			VALUES
+			($1, $2, $3)`,
+		ch.Id,
+		user.Id,
+		sign,
 	)
 }
