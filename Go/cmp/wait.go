@@ -15,7 +15,7 @@ type WaitBlock struct {
 }
 
 func (w WaitBlock) Execute(b *Bot) {
-	b.Msg.ChatID = w.ChatId
+
 	if w.Typing {
 		fmt.Println("Sleeping and typing")
 		b.BotApi.Send(tgbotapi.NewChatAction(w.ChatId, tgbotapi.ChatTyping))

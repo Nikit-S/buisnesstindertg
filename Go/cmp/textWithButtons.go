@@ -10,9 +10,9 @@ type TextWithButtons struct {
 }
 
 func (t TextWithButtons) Execute(b *Bot) {
-	b.Msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(t.HideKeyboard)
-	b.Msg.Text = t.Msg
-	b.Msg.ReplyMarkup = t.Buttons
-	msg, _ := b.BotApi.Send(b.Msg)
+	m := tgbotapi.NewMessage(t.ChatId, t.Msg)
+	m.ReplyMarkup = tgbotapi.NewRemoveKeyboard(t.HideKeyboard)
+	m.ReplyMarkup = t.Buttons
+	msg, _ := b.BotApi.Send(m)
 	b.LogMsg(msg)
 }

@@ -10,8 +10,8 @@ type TextWithKeyboard struct {
 }
 
 func (t *TextWithKeyboard) Execute(b *Bot) {
-	b.Msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(t.HideKeyboard)
-	b.Msg.Text = t.Msg
-	b.Msg.ReplyMarkup = t.Keyboard
-	b.BotApi.Send(b.Msg)
+	m := tgbotapi.NewMessage(t.ChatId, t.Msg)
+	m.ReplyMarkup = tgbotapi.NewRemoveKeyboard(t.HideKeyboard)
+	m.ReplyMarkup = t.Keyboard
+	b.BotApi.Send(m)
 }

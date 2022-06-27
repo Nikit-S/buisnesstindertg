@@ -26,5 +26,6 @@ func (s *Screen) Exec(b *Bot) {
 
 type Chat struct {
 	Id      int64
+	Part    bool
 	Updates chan tgbotapi.Update
 }

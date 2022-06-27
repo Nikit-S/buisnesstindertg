@@ -238,15 +238,15 @@ type User struct {
 	Description string
 }
 
-func (b *Bot) GetParticipants(chat *Chat, old bool) []User {
+func (b *Bot) GetParticipants(chat *Chat) []User {
 	user := User{}
-	users := make([]User, 1)
+	users := []User{}
 	row, err := b.Db.Query(`SELECT id, first_name, last_name, username, phone, description FROM public.chats 
 	WHERE chats.id != $1 AND chats.part = true
 	AND chats.id NOT IN 
 		(SELECT pair_id FROM public.user_pair_history
-			WHERE id = $1 AND want = $2)
-		`, chat.Id, old)
+			WHERE id = $1)
+		`, chat.Id)
 	if err != nil {
 		log.Println("sql error in GetParticipants")
 		return nil
@@ -256,9 +256,70 @@ func (b *Bot) GetParticipants(chat *Chat, old bool) []User {
 			&user.Username, &user.Phone, &user.Description); err != nil {
 			fmt.Println(err)
 			continue
+		} else {
+			fmt.Println(user)
+			users = append(users, user)
 		}
-		fmt.Println(user)
-		users = append(users, user)
+	}
+
+	fmt.Println("total users got from sql:", users)
+	return users
+}
+
+func (b *Bot) GetMatchesForId(chat *Chat) []User {
+	user := User{}
+	users := []User{}
+	row, err := b.Db.Query(`SELECT id, first_name, last_name, username, phone, description FROM public.chats 
+	WHERE id IN 
+		(SELECT id FROM public.user_pair_history
+			WHERE pair_id = $1 AND want = true )
+		AND
+		id IN 
+		(SELECT pair_id FROM public.user_pair_history
+			WHERE id = $1 AND want = true )
+		AND part = true
+		`, chat.Id)
+	if err != nil {
+		log.Println("sql error in GetParticipants")
+		return nil
+	}
+	for row.Next() {
+		if err = row.Scan(&user.Id, &user.FirstName, &user.LastName,
+			&user.Username, &user.Phone, &user.Description); err != nil {
+			fmt.Println(err)
+			continue
+		} else {
+			fmt.Println(user)
+			users = append(users, user)
+		}
+	}
+
+	fmt.Println("total users got from sql:", users)
+	return users
+}
+
+func (b *Bot) GetParticipantsWithDecline(chat *Chat) []User {
+	user := User{}
+	users := []User{}
+	row, err := b.Db.Query(`SELECT id, first_name, last_name, username, phone, description FROM public.chats 
+	WHERE chats.id != $1 AND chats.part = true
+	AND chats.id NOT IN 
+		(SELECT pair_id FROM public.user_pair_history
+			WHERE id = $1 AND want != false)
+		`, chat.Id)
+	if err != nil {
+		log.Println("sql error in GetParticipants")
+		return nil
+	}
+	for row.Next() {
+		if err = row.Scan(&user.Id, &user.FirstName, &user.LastName,
+			&user.Username, &user.Phone, &user.Description); err != nil {
+			fmt.Println(err)
+			continue
+		} else {
+			fmt.Println(user)
+			users = append(users, user)
+		}
 	}
 
 	fmt.Println("total users got from sql:", users)
@@ -269,7 +330,11 @@ func (b *Bot) RegisterPair(ch *Chat, user User, sign bool) {
 	b.Db.Exec(`INSERT INTO public.user_pair_history
 			(id, pair_id, want)
 			VALUES
-			($1, $2, $3)`,
+			($1, $2, $3)
+			ON CONFLICT (id, pair_id) DO
+			UPDATE
+			SET
+			want=$3`,
 		ch.Id,
 		user.Id,
 		sign,

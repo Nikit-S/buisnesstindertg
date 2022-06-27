@@ -14,7 +14,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var Chats map[int64]*cmp.Chat = make(map[int64]*cmp.Chat)
+var Chats map[int64]cmp.Chat = make(map[int64]cmp.Chat)
 
 func main() {
 
@@ -59,22 +59,31 @@ func main() {
 	Bot.BotApi = bot
 	Bot.Msg = &tgbotapi.MessageConfig{}
 	Bot.TinderStart = make(chan struct{})
+
+	//rows, err := Bot.Db.Query(`SELECT id, part FROM public.chats`)
+	//if err == nil {
+	//	var id int64
+	//	var part bool
+	//	for rows.Next() {
+	//		rows.Scan(&id, &part)
+	//		Chats[id] = &cmp.Chat{}
+	//		Chats[id].Updates = make(chan tgbotapi.Update)
+	//		Chats[id].Id = id
+	//		Chats[id].Part = part
+	//	}
+	//}
+
 	for update := range updates {
 		log.Println("got update")
-		//if update.CallbackQuery != nil {
-		//	Bot.BotApi.Send(tgbotapi.NewCallback(update.CallbackQuery.ID, "Отлично!"))
-		//}
 		if update.Message != nil || update.CallbackQuery != nil {
 			go func() {
 				if update.Message != nil {
 					Bot.LogMsg(*update.Message)
 				}
 			}()
-			if v, ok := Chats[update.FromChat().ChatConfig().ChatID]; ok {
-				v.Updates <- update
-			} else {
+			if _, ok := Chats[update.FromChat().ChatConfig().ChatID]; !ok {
 				fmt.Println("starting new chat")
-				v := &cmp.Chat{
+				v := cmp.Chat{
 					Updates: make(chan tgbotapi.Update),
 					Id:      update.FromChat().ChatConfig().ChatID}
 				Chats[v.Id] = v
@@ -87,9 +96,17 @@ func main() {
 					update.FromChat().LastName,
 					update.FromChat().UserName,
 				)
-				go src.StartChatWithUser(&Bot, v)
-				v.Updates <- update
+				go src.StartChatWithUser(&Bot, &v)
 			}
+			if update.Message != nil {
+
+				fmt.Println("BALANCER: TO_ID:", update.FromChat().ChatConfig().ChatID, "FROM_ID:", update.Message.From.ID)
+			} else if update.CallbackQuery != nil {
+
+				fmt.Println("BALANCER: TO_ID:", update.FromChat().ChatConfig().ChatID, "FROM_ID:", update.CallbackQuery.From.ID)
+			}
+			fmt.Println(Chats[update.FromChat().ChatConfig().ChatID].Id)
+			Chats[update.FromChat().ChatConfig().ChatID].Updates <- update
 		}
 	}
 }

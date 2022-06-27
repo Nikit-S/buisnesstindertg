@@ -34,5 +34,6 @@ CREATE TABLE IF NOT EXISTS public.pairs (
 CREATE TABLE IF NOT EXISTS public.user_pair_history (
 	id varchar REFERENCES public.chats(id),
 	pair_id varchar REFERENCES public.chats(id),
-	want boolean not null
+	want boolean not null,
+	PRIMARY KEY (id, pair_id)
 );
